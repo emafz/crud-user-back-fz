@@ -1,12 +1,12 @@
 import express from 'express'
 
-import './config/env.js'
+import { env } from '../config/env.js'
 
-import connectDB from './config/dbv.js'
+import connectDB from '../config/db.js'
 
-import userRoutes from './routes/user.routes.js'
+import userRoutes from '../routes/user.routes.js'
 
-const app = express ()
+const app = express()
 
 app.use(express.json())
 
@@ -14,6 +14,6 @@ connectDB()
 
 app.use(userRoutes)
 
-app.listen(process.env.PORT, () => {
-    console.log (Servidor conectado en puerto ${process.env.PORT})
+app.listen(env.PORT, () => {
+    console.log(`Servidor conectado en puerto ${env.PORT}`)
 })
