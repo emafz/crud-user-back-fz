@@ -1,78 +1,303 @@
-import bcrypt from "bcryptjs"
-import User from "../models/user.model.js"
+import bcrypt from "bcryptjs";
+import User from "../models/user.model.js";
+import Audit from "../models/audit.model.js";
+import mongoose from "mongoose";
 
-const getUsersService = async () => {
+const getUsersService = async ({ email, id }) => {
+  console.log("📦 SERVICE → getUsersService");
+
   try {
-    console.log('SERVICE -> getUsersService')
-    return await User.find().select('-password')
-  } catch (error) {
-    throw error
-  }
-}
+    // Buscar por ID
+    if (id) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw {
+          statusCode: 400,
+          message: "Id inválido",
+        };
+      }
 
+      const user = await User.findById(id)
+        .select("-password");
+
+      if (!user) {
+        throw {
+          statusCode: 404,
+          message: "Usuario no encontrado",
+        };
+      }
+
+      return user;
+    }
+
+    // Buscar por email
+    if (email) {
+      const user = await User.findOne({
+        email,
+      }).select("-password");
+
+      if (!user) {
+        throw {
+          statusCode: 404,
+          message: "Usuario no encontrado",
+        };
+      }
+
+      return user;
+    }
+
+    // Obtener todos
+    return await User.find()
+      .select("-password")
+      .sort({ nombre: 1 });
+
+  } catch (error) {
+    console.error(
+      "❌ Error en getUsersService:",
+      error
+    );
+
+    throw {
+      statusCode:
+        error.statusCode || 500,
+      message:
+        error.message ||
+        "Error interno del servidor",
+      errors:
+        error.errors || null,
+    };
+  }
+};
 
 const createUserService = async (data) => {
+  console.log("📦 SERVICE → createUserService");
+
   try {
-    console.log('SERVICE -> createUserService')
-    console.log(Data)
     const existUser = await User.findOne({
-        email: data.email
-    })
+      email: data.email,
+    });
 
     if (existUser) {
-        throw new Error('El usuario ya existe')
+      throw {
+        statusCode: 409,
+        message: "El usuario ya existe",
+      };
     }
 
-    const hashPassword = await bcrypt.hash
-        (data.password, 10)
+    const hashedPassword = await bcrypt.hash(
+      data.password,
+      10,
+    );
 
-    const user =new User({
-        nombre: data.nombre,
-        apellido: data.apellido,
-        email: data.email,
-        password: hashPassword,
-        edad: data.edad,
-        sexo: data.sexo,
-        telefono: data.telefono,
-        direccion: data.direccion
-    })
+    const user = new User({
+      nombre: data.nombre,
+      apellido: data.apellido,
+      email: data.email,
+      password: hashedPassword,
+      fechaNacimiento: data.fechaNacimiento,
+      edad: data.edad,
+      genero: data.genero,
+      telefono: data.telefono,
+      direccion: data.direccion,
+      localidad: data.localidad,
+      provincia: data.provincia,
+      pais: data.pais,
+      codigoPostal: data.codigoPostal,
+    });
 
-    await user.save()
+    await user.save();
+
     return {
-        id: user._id,
-        nombre: user.nombre,
-        apellido: user.apellido,
-        email: user.email,
-        edad: user.edad,
-        sexo: user.sexo,
-        telefono: user.telefono,
-        direccion: user.direccion
-    }
+      id: user._id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      email: user.email,
+      fechaNacimiento: user.fechaNacimiento,
+      edad: user.edad,
+      genero: user.genero,
+      telefono: user.telefono,
+      direccion: user.direccion,
+      localidad: user.localidad,
+      provincia: user.provincia,
+      pais: user.pais,
+      codigoPostal: user.codigoPostal,
+    };
+  } catch (error) {
+    console.error(
+      "❌ Error en createUserService:",
+      error
+    );
 
-}catch (error) {
-    throw error
-    }
-}
-
-
-
+    throw {
+      statusCode:
+        error.statusCode || 500,
+      message:
+        error.message ||
+        "Error interno del servidor",
+      errors:
+        error.errors || null,
+    };
+  }
+};
 
 const updateUserService = async (id, data) => {
+  console.log("📦 SERVICE → updateUserService");
+
   try {
-    console.log('SERVICE -> updateUserService')
-    if (data.password) {
-      const salt = await bcrypt.genSalt(10)
-      data.password = await bcrypt.hash(data.password, salt)
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw {
+        statusCode: 400,
+        message: "Id inválido",
+      };
     }
-    return await User.findByIdAndUpdate(id, data, { new: true }).select('-password')
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      throw {
+        statusCode: 404,
+        message: "Usuario no encontrado",
+      };
+    }
+
+    // El email existe pero no es modificable
+    if (data.email !== undefined) {
+      throw {
+        statusCode: 400,
+        message: "El email no puede modificarse",
+      };
+    }
+
+    const allowedFields = [
+      "nombre",
+      "apellido",
+      "fechaNacimiento",
+      "edad",
+      "genero",
+      "telefono",
+      "direccion",
+      "localidad",
+      "provincia",
+      "pais",
+      "codigoPostal",
+    ];
+
+    allowedFields.forEach((field) => {
+      if (data[field] !== undefined) {
+        user[field] = data[field];
+      }
+    });
+
+    // Actualizar password si viene informada
+    if (data.password !== undefined) {
+      user.password = await bcrypt.hash(
+        data.password,
+        10
+      );
+    }
+
+    await user.save();
+
+    return {
+      id: user._id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      email: user.email,
+      fechaNacimiento: user.fechaNacimiento,
+      edad: user.edad,
+      genero: user.genero,
+      telefono: user.telefono,
+      direccion: user.direccion,
+      localidad: user.localidad,
+      provincia: user.provincia,
+      pais: user.pais,
+      codigoPostal: user.codigoPostal,
+    };
   } catch (error) {
-    throw error
+    console.error(
+      "❌ Error en updateUserService:",
+      error
+    );
+
+    throw {
+      statusCode:
+        error.statusCode || 500,
+      message:
+        error.message ||
+        "Error interno del servidor",
+      errors:
+        error.errors || null,
+    };
   }
-}
+};
+
+const deleteUserService = async (id) => {
+  console.log("📦 SERVICE → deleteUserService");
+
+  let session;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw {
+        statusCode: 400,
+        message: "Id inválido",
+      };
+    }
+
+    session = await mongoose.startSession();
+
+    await session.withTransaction(async () => {
+      const user = await User.findById(id)
+        .session(session);
+
+      if (!user) {
+        throw {
+          statusCode: 404,
+          message: "Usuario no encontrado",
+        };
+      }
+
+      await Audit.create(
+        [
+          {
+            usuarioEliminado: user.toObject(),
+            fechaEliminacion: new Date(),
+          },
+        ],
+        { session }
+      );
+
+      await user.deleteOne({ session });
+    });
+
+    return {
+      message: "Usuario eliminado",
+    };
+
+  } catch (error) {
+    console.error(
+      "❌ Error en deleteUserService:",
+      error
+    );
+
+    throw {
+      statusCode:
+        error.statusCode || 500,
+      message:
+        error.message ||
+        "Error interno del servidor",
+      errors:
+        error.errors || null,
+    };
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
+  }
+};
 
 export {
   getUsersService,
   createUserService,
   updateUserService,
-  deleteUserService
-}
+  deleteUserService,
+};

@@ -1,71 +1,164 @@
 import {
   createUserSchema,
-  updateUserSchema
-} from '../dto/user.dto.js'
+  updateUserSchema,
+  userParamsSchema,
+} from "../dto/user.dto.js";
 
 import {
   getUsersService,
   createUserService,
   updateUserService,
-  deleteUserService
-} from '../services/user.service.js'
+  deleteUserService,
+} from "../services/user.service.js";
+
+import {
+  successResponse,
+  errorResponse,
+} from "../helpers/response.helper.js";
+
+//METODO GET
 const getUsers = async (req, res) => {
   try {
-    console.log('🎮 CONTROLLER → getUsers')
-    const users = await getUsersService()
-    return res.json(users)
-  } catch (error) {
-    res.status(500).json({
-      error: error.message
-    })
-  }
-}
+    const { email, id } = req.query;
 
+    const users = await getUsersService({
+      email,
+      id,
+    });
+
+    return successResponse(
+      res,
+      users,
+      "Usuarios obtenidos correctamente"
+    );
+  } catch (error) {
+    return errorResponse(
+      res,
+      error.message || "Error interno del servidor",
+      error.statusCode || 500,
+      error.errors || null
+    );
+  }
+};
+
+
+//METODO POST
 const createUser = async (req, res) => {
   try {
-    console.log('🎮 CONTROLLER → createUser')
-    const { error } = createUserSchema.validate(req.body)
+    const { error } = createUserSchema.validate(req.body);
+
     if (error) {
-      return res.status(400).json({
-        error: error.details[0].message
-      })
+      return errorResponse(
+        res,
+        "Error de validación",
+        400,
+        error.details
+      );
     }
-    const user = await createUserService(req.body)
-    return res.status(201).json(user)
+
+    const user = await createUserService(req.body);
+
+    return successResponse(
+      res,
+      user,
+      "Usuario creado correctamente",
+      201
+    );
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    return errorResponse(
+      res,
+      error.message || "Error interno del servidor",
+      error.statusCode || 500,
+      error.errors || null
+    );
   }
-}
+};
+
+
+//METODO PUT
 const updateUser = async (req, res) => {
   try {
-    console.log('🎮 CONTROLLER → updateUser')
-    const { error } = updateUserSchema.validate(req.body)
-    if (error) {
-      return res.status(400).json({
-        error: error.details[0].message
-      })
+    const { error: paramsError } =
+      userParamsSchema.validate(req.params);
+
+    if (paramsError) {
+      return errorResponse(
+        res,
+        "Id inválido",
+        400,
+        paramsError.details
+      );
     }
-    const user = await updateUserService(req.params.id, req.body)
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' })
-    return res.json(user)
+
+    const { error } =
+      updateUserSchema.validate(req.body);
+
+    if (error) {
+      return errorResponse(
+        res,
+        "Error de validación",
+        400,
+        error.details
+      );
+    }
+
+    const user = await updateUserService(
+      req.params.id,
+      req.body
+    );
+
+    return successResponse(
+      res,
+      user,
+      "Usuario actualizado correctamente"
+    );
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    return errorResponse(
+      res,
+      error.message || "Error interno del servidor",
+      error.statusCode || 500,
+      error.errors || null
+    );
   }
-}
+};
+
+//METODO DELETE
 const deleteUser = async (req, res) => {
   try {
-    console.log('🎮 CONTROLLER → deleteUser')
-    const user = await deleteUserService(req.params.id)
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' })
-    return res.json({ message: 'Usuario eliminado correctamente', id: req.params.id })
+    const { error: paramsError } =
+      userParamsSchema.validate(req.params);
+
+    if (paramsError) {
+      return errorResponse(
+        res,
+        "Id inválido",
+        400,
+        paramsError.details
+      );
+    }
+
+    const result = await deleteUserService(
+      req.params.id
+    );
+
+    return successResponse(
+      res,
+      result,
+      "Usuario eliminado correctamente"
+    );
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    return errorResponse(
+      res,
+      error.message || "Error interno del servidor",
+      error.statusCode || 500,
+      error.errors || null
+    );
   }
-}
+};
 
 export {
   getUsers,
   createUser,
   updateUser,
-  deleteUser
-}
+  deleteUser,
+};
