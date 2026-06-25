@@ -1,16 +1,19 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const auditSchema = new mongoose.Schema({
 
-    usuarioEliminado: {
-        type: Object,
-        required: true
-    },
-    fechaEliminacion: {
-        type: Date,
-        required: Date.now
-    }
-});
+  usuarioEliminado: {
+    type: Object,
+    required: true
+  },
 
-const Audit = mongoose.model('Audit', auditSchema);
+  fechaEliminacion: {
+    type: Date,
+    default: Date.now
+  }
+
+})
+
+const Audit = mongoose.model('Audit', auditSchema)
+
 export default Audit

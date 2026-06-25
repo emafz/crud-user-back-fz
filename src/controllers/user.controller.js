@@ -16,7 +16,6 @@ import {
   errorResponse,
 } from "../helpers/response.helper.js";
 
-//METODO GET
 const getUsers = async (req, res) => {
   try {
     const { email, id } = req.query;
@@ -41,8 +40,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-
-//METODO POST
 const createUser = async (req, res) => {
   try {
     const { error } = createUserSchema.validate(req.body);
@@ -74,8 +71,6 @@ const createUser = async (req, res) => {
   }
 };
 
-
-//METODO PUT
 const updateUser = async (req, res) => {
   try {
     const { error: paramsError } =
@@ -122,7 +117,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-//METODO DELETE
 const deleteUser = async (req, res) => {
   try {
     const { error: paramsError } =
