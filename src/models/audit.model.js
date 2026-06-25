@@ -8,7 +8,7 @@ const auditSchema = new mongoose.Schema({
     },
     fechaEliminacion: {
         type: Date,
-        required: date.now
+        required: Date.now
     }
 });
 
