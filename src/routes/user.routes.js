@@ -19,12 +19,7 @@ router.get('/users',
         'ADMIN'
     ), getUsers)
 
-    router.post('/users', 
-    authMiddleware,
-    authorizeRoles(
-        'ROOT',
-        'ADMIN'
-    ), createUser) 
+    router.post('/users', createUser)
 
 router.put('/users/:id', 
     authMiddleware,
